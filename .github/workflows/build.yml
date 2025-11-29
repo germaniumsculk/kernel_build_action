@@ -21,6 +21,7 @@ jobs:
           config: lavender_defconfig vendor/sdm660_defconfig
           arch: arm64
           aosp-clang: true
+          aosp-gcc: true
           android-version: 16
           disable-lto: true
           anykernel3: true
