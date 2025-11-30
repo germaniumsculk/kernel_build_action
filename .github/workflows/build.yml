@@ -25,25 +25,33 @@ jobs:
           other-clang-url: https://github.com/ZyCromerZ/Clang/releases/download/19.0.0git-20240605-release/Clang-19.0.0git-20240605.tar.gz
           android-version: 12
           disable-lto: true
-          anykernel3: true
-
-      # ADD THIS NEW STEP IF THE ACTION FAILS TO ZIP
-      - name: Manually Pack AnyKernel3 (Fallback)
-        if: failure() || success()  # Run even if the previous step "failed" on packaging
+          anykernel3: false
+          
+      # PACKAGE MANUALLY (Since we have Image.gz-dtb)
+      - name: Package Kernel
         run: |
-           echo "Packaging manually..."
-           git clone https://github.com/osm0sis/AnyKernel3
-           cp kernel/xiaomi/lavender/out/arch/arm64/boot/Image.gz-dtb AnyKernel3/
-           
-           # Create a dummy dtbo.img to silence errors if needed, or just zip without it
-           touch AnyKernel3/dtbo.img 
-           
-           cd AnyKernel3
-           # Edit anykernel.sh to remove dtbo flashing lines if they exist, or just zip it
-           zip -r9 ../AnyKernel3.zip *
-           
-      - name: Upload Kernel
+          echo "Cloning AnyKernel3..."
+          git clone https://github.com/osm0sis/AnyKernel3
+          
+          echo "Copying Kernel Image..."
+          # Move the compiled kernel to AnyKernel3 folder
+          cp kernel/xiaomi/lavender/out/arch/arm64/boot/Image.gz-dtb AnyKernel3/
+          
+          cd AnyKernel3
+          
+          # Configure for Lavender
+          sed -i 's/device.name1=maguro/device.name1=lavender/g' anykernel.sh
+          sed -i 's/do.devicecheck=1/do.devicecheck=0/g' anykernel.sh
+          
+          # Remove dtbo flashing commands (since we don't have one)
+          sed -i '/dtbo.img/d' anykernel.sh
+          
+          # Zip it up
+          zip -r9 ../AnyKernel3-Lavender.zip *
+
+      # UPLOAD ZIP
+      - name: Upload Kernel Zip
         uses: actions/upload-artifact@v4
         with:
-          name: AnyKernel3-Lavender
-          path: AnyKernel3.zip
+          name: Lavender-Kernel-Zip
+          path: AnyKernel3-Lavender.zip
